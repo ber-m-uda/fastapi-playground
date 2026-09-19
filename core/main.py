@@ -1,10 +1,19 @@
-from fastapi import FastAPI, Query, status, HTTPException, Path, Form, Body
+from fastapi import FastAPI, Query, status, HTTPException, Path, Form, Body, File, UploadFile
 from fastapi.responses import JSONResponse
 import random
-from typing import Optional, Annotated
+from typing import Optional, Annotated, List
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from schemas import PersonCreatSchemas, PersonReasponsSchemas
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("** stating app")
+    yield
+    print("shuntdon app **")
+
+app = FastAPI(lifespan=lifespan)
 
 
 names_list = [
@@ -17,8 +26,10 @@ names_list = [
     {"id":7, "name":"mohammad"},
 ]
 
+
+
 # return names
-@app.get("/names", status_code = 200)
+@app.get("/names", status_code = 200, response_model=PersonReasponsSchemas)
 # def retreivs_name_list(q: str = None):
 # def retreivs_name_list(q: str | None = None):
 # def retreivs_name_list(q: Annotated[str | None, Query(max_length=50)] = None):
@@ -42,13 +53,45 @@ def retreivs_name_with_id(name_id:int):
     raise HTTPException(status_code=404, detail="Object not found!")
 
 
-# create a new name
-@app.post("/names", status_code= status.HTTP_201_CREATED)
-def creat_name(name: str = Body()):
-    name_obj = {"id": random.randint(6,100), "name": name }
+
+# # # create a new name  ---- Metod 1
+
+# @app.post("/names", status_code= status.HTTP_201_CREATED)
+# def creat_name(name: str = Body(embed=True)):
+#     name_obj = {"id": random.randint(6,100), "name": name }
+#     names_list.append(name_obj)
+#     return name_obj
+#     # raise HTTPException(status_code=404, detail="Object not found!")
+
+
+
+
+# create a new name with dataclass  --- Metod 2
+# @dataclass
+# class Student:
+#     name: str
+#     age: int
+
+# @dataclass
+# class Student2:
+#     id: int 
+#     name: str
+#     age : int
+
+# @app.post("/names", status_code= status.HTTP_201_CREATED, response_model=Student2)
+# def creat_name(student: Student):
+#     name_obj = {"id": random.randint(6,100), "name": student.name}
+#     names_list.append(name_obj)
+#     return name_obj
+
+
+
+# # # create a new name with pydantic model  --- Metod 3
+@app.post("/names", status_code= status.HTTP_201_CREATED, response_model=PersonReasponsSchemas)
+def creat_name(person: PersonCreatSchemas):
+    name_obj = {"id": random.randint(6,100), "name": person.name}
     names_list.append(name_obj)
-    # return name_obj
-    raise HTTPException(status_code=404, detail="Object not found!")
+    return name_obj
 
 
 # remove name with id
@@ -79,3 +122,23 @@ def update_name(name_id:int = Path(alias="new_name"), name = Form()):
 def root():
     # return {"messege" : "Hello World!!! "}
     return JSONResponse(content={'message':'Hello world!'}, status_code = status.HTTP_200_OK)
+
+
+
+@app.post("/uploadfile1/")
+def upload_file_1(file: bytes = File(...)):
+    print(file)
+    return {"file_size": len(file)}
+
+
+# @app.post("/uploadfile2/")
+# async def upload_file_2(file: UploadFile = File(...)):
+#     content = await file.read()
+#     print(file.__dict__)
+#     return {"file_name": file.filename, "content_type": file.content_type, "file_size": len(content)}
+
+
+@app.post("/upload-multiple/")
+async def upload_multiple(files: List[UploadFile]= File(...)):
+    return [{"file_name":file.filename, "content_type": file.content_type} for file in files
+    ]
