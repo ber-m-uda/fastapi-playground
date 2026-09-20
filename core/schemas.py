@@ -1,13 +1,13 @@
 from pydantic import BaseModel
 
-class PersonCreatSchemas(BaseModel):
+class BasePersonSchemas(BaseModel):
     name: str
 
+class PersonCreatSchemas(BasePersonSchemas):
+    pass
 
-class PersonReasponsSchemas(BaseModel):
+class PersonReasponsSchemas(BasePersonSchemas):
     id: int
-    name: str
 
-
-class PersonUpdateSchemas(BaseModel):
-    name: str
+class PersonUpdateSchemas(BasePersonSchemas):
+    pass
